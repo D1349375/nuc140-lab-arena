@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>NUC140 Lab Arena</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('nuc140:theme')||'dark'}catch{}</script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">N</span><div><h1>NUC140 <span>Lab Arena</span></h1><p>微處理機系統實驗練習場</p></div><span id="compiler-status" class="badge muted">檢查環境中</span></div>
+    <nav class="header-actions" aria-label="工作台工具">
+      <button id="problem-toggle" class="button subtle" title="收合或展開題目" aria-label="收合或展開題目"><span data-icon="panel"></span><span>題目</span></button>
+      <button id="settings-button" class="button subtle" aria-label="練習設定"><span data-icon="sliders"></span><span>練習設定</span></button>
+      <button id="export-button" class="button subtle" aria-label="匯出 Keil 專案"><span data-icon="download"></span><span>匯出 Keil 專案</span></button>
+      <button id="theme-button" class="button icon-button" aria-label="切換淺色模式" title="切換淺色模式"><span data-icon="sun"></span></button>
+    </nav>
+  </header>
+  <nav class="mobile-navigation" aria-label="工作區切換"><button data-mobile="problem">題目</button><button data-mobile="editor" class="active">程式</button><button data-mobile="right">板子與導師</button></nav>
+  <div class="workspace" data-mobile-panel="editor">
+    <aside class="sidebar">
+      <div class="sidebar-heading"><span>實驗題庫</span><span class="counter">6</span></div>
+      <div class="search"><span data-icon="search"></span><input id="search" placeholder="搜尋題目…" aria-label="搜尋題目"></div>
+      <div id="lab-list" class="lab-list"></div>
+      <div class="sidebar-bottom"><span class="status-dot"></span>Nu-LB-NUC140<span class="small muted">BSP v1.4.5</span></div>
+    </aside>
+    <div class="divider" data-resize="sidebar" role="separator" aria-label="調整題庫寬度"></div>
+    <section id="problem-panel" class="problem-panel">
+      <div class="panel-heading"><span><span data-icon="book"></span>題目說明</span><span id="problem-label" class="small muted"></span></div>
+      <div class="problem-content"><div id="problem-meta" class="meta-row"></div><h2 id="problem-title"></h2><p id="problem-description" class="lead"></p>
+        <h3>實作要求</h3><ol id="requirements"></ol>
+        <h3>驗收項目</h3><div id="checks" class="check-list"></div>
+        <div class="hint-card"><h3><span data-icon="bulb"></span>練習提示</h3><ul id="tips"></ul></div>
+        <div class="source-note"><span data-icon="file"></span><span id="source"></span></div>
+      </div>
+    </section>
+    <div id="problem-divider" class="divider" data-resize="problem-panel" role="separator" aria-label="調整題目寬度"></div>
+    <section class="editor-panel">
+      <div class="editor-toolbar"><div class="sample-control"><label class="switch"><input id="sample-toggle" type="checkbox" checked><span></span></label><label for="sample-toggle">Sample Code</label><select id="sample-select" aria-label="選擇基礎範例"></select></div><button id="load-template" class="text-button">載入起始碼</button></div>
+      <div class="file-tabs" id="file-tabs" role="tablist" aria-label="專案檔案"></div>
+      <div class="editor-caption"><span id="file-description">主要程式</span><div><label for="import-file" class="text-button" tabindex="0">匯入檔案</label><input id="import-file" type="file" accept=".c,.h" hidden><button id="save-version" class="text-button" title="儲存目前所有檔案的版本">存版本</button><button id="versions-button" class="text-button">版本記錄</button></div></div>
+      <div class="code-editor"><div id="line-numbers" class="line-numbers" aria-hidden="true">1</div><div class="code-area"><pre id="highlight" aria-hidden="true"></pre><textarea id="code" aria-label="C 程式編輯器" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off"></textarea></div></div>
+      <div class="editor-status"><span id="save-status">自動儲存已啟用</span><span id="cursor-position">Ln 1, Col 1</span><span>C · UTF-8</span></div>
+      <div class="run-toolbar"><div><button id="run-button" class="button primary"><span data-icon="play"></span>編譯並執行</button><button id="judge-button" class="button"><span data-icon="check"></span>自動評測</button></div><span id="run-status" class="small muted">準備就緒</span></div>
+      <div class="console-panel"><div class="console-tabs" role="tablist"><button data-console="output" class="active">編譯與輸出</button><button data-console="results">評測結果<span id="result-count"></span></button><button data-console="events">事件紀錄</button></div><div id="console-output" class="console-content"><div class="empty-console"><span data-icon="terminal"></span><p>寫好程式後，讓板子告訴你結果。</p><span>編譯訊息與程式輸出會顯示在這裡。</span></div></div><div id="console-results" class="console-content" hidden></div><div id="console-events" class="console-content" hidden></div></div>
+    </section>
+    <div class="divider" data-resize="right-panel" role="separator" aria-label="調整板子與導師寬度"></div>
+    <aside id="right-panel" class="right-panel">
+      <section class="simulator-panel"><div class="panel-heading"><span><span data-icon="cpu"></span>模擬開發板</span><span id="simulation-status" class="badge muted">待執行</span></div>
+        <div class="board-wrap"><div id="board" class="pcb" tabindex="0" aria-label="NUC140 模擬開發板，可按數字鍵 1 到 9">
+          <span class="screw s1"></span><span class="screw s2"></span><span class="screw s3"></span><span class="screw s4"></span>
+          <div class="board-port port-usb"></div><div class="board-port port-serial"></div><div class="board-chip small-chip"></div><span class="board-silkscreen nulink">Nu-Link</span>
+          <div class="main-chip"><span>nuvoton</span><strong>NUC140</strong><small>VE3CN</small></div>
+          <div class="seven-segments" id="seven-segments" aria-label="七段顯示器"></div>
+          <div class="board-lcd"><span>LCD</span></div>
+          <div class="led-bank" id="led-bank" aria-label="LED PC12 至 PC15"></div>
+          <div class="keypad" id="keypad" aria-label="九宮格按鍵"></div>
+          <div class="buzzer-device" id="buzzer-device"><span></span></div>
+          <div class="pin-header pin-header-top"></div><div class="pin-header pin-header-bottom"></div>
+          <span class="board-silkscreen board-brand">nuvoton</span><span class="board-silkscreen board-model">Nu-LB-NUC140</span>
+        </div></div>
+        <div class="board-readout"><div id="led-readout" class="pin-readout"></div><span id="sim-time" class="mono">0.00 s</span></div>
+        <div class="board-controls"><button id="pause-button" class="button icon-button" disabled aria-label="暫停模擬" title="暫停模擬"><span data-icon="pause"></span></button><button id="reset-button" class="button icon-button" disabled aria-label="重新執行程式" title="重新執行程式"><span data-icon="reset"></span></button><button id="stop-button" class="button icon-button" disabled aria-label="停止模擬" title="停止模擬"><span data-icon="stop"></span></button><select id="speed" aria-label="模擬速度"><option value="1">1× 速度</option><option value="2">2× 速度</option><option value="3">3× 速度</option><option value="0.25">0.25× 慢速</option></select><button id="audio-button" class="button icon-button" aria-label="開啟蜂鳴器聲音" title="開啟蜂鳴器聲音"><span data-icon="volume-off"></span></button></div>
+        <div class="board-note"><span data-icon="mouse"></span>按住／放開按鍵，或點選板子後使用數字鍵。</div>
+      </section>
+      <section class="mentor-panel"><div class="panel-heading"><span><span data-icon="mentor"></span>AI 程式導師</span><span id="agy-status" class="small muted">Antigravity CLI</span></div>
+        <div class="mentor-context"><span class="status-dot"></span>導師會參考程式、題目與板子紀錄<button id="clear-chat" class="text-button" title="清除目前題目的對話">清除</button></div>
+        <div id="chat-messages" class="chat-messages"><div class="mentor-welcome"><div class="mentor-avatar"><span data-icon="mentor"></span></div><h3>一起看懂板子的反應</h3><p>可以問我程式怎麼運作、按鍵為什麼重複觸發，或請我分析評測沒有通過的原因。</p><button id="analyze-button" class="button"><span data-icon="spark"></span>分析目前程式</button></div></div>
+        <form id="chat-form" class="chat-composer"><textarea id="chat-input" rows="2" placeholder="描述你的思路，或問一個問題…" aria-label="向 AI 導師提問"></textarea><button id="send-chat" class="button primary icon-button" type="submit" aria-label="送出提問"><span data-icon="send"></span></button></form>
+        <div class="mentor-footer">提示優先 · 使用你本機的 Antigravity 登入</div>
+      </section>
+    </aside>
+  </div>
+  <dialog id="settings-dialog"><form id="settings-form"><div class="dialog-heading"><h2>練習設定</h2><button type="button" class="text-button close-dialog" aria-label="關閉">✕</button></div><p class="muted">設定會寫入 lab_config.h，並隨 Keil 專案一起匯出。</p><label>學號最後一碼<input name="studentDigit" type="number" min="0" max="9" required></label><label>實驗日期七碼<input name="date" type="text" pattern="[0-9]{7}" maxlength="7" required placeholder="1150921"></label><label>Lab 1.2 測試方向<select name="direction"><option value="1">左向右</option><option value="-1">右向左</option></select></label><label>Lab 3.1 初始秒數<input name="initialSeconds" type="number" min="0" max="59" required></label><p class="small muted">一般練習設為 0；依教材驗收可設為 55。程式需使用對應的 LAB_ 常數。</p><button class="button primary" type="submit">儲存設定</button></form></dialog>
+  <dialog id="versions-dialog"><div class="dialog-heading"><h2>版本記錄</h2><button class="text-button close-dialog" aria-label="關閉">✕</button></div><p class="muted small">每個版本包含全部程式檔案、範例來源與練習設定。</p><div id="version-list"></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

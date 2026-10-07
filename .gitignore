@@ -1,0 +1,17 @@
+.runtime/
+__pycache__/
+*.pyc
+.venv/
+*.exe
+*.o
+*.obj
+*.axf
+*.bin
+*.crf
+*.d
+*.lnp
+*.lst
+*.map
+*.zip
+*.uvopt
+*.uvgui*

@@ -1,0 +1,22 @@
+name: Verify Lab Arena
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Verify native C, Lab grading, export and mentor protocol
+        run: python -m unittest discover -v
+      - name: Check browser JavaScript
+        run: node --check web/app.js
