@@ -6,7 +6,10 @@
   <title>NUC140 Lab Arena</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/assets/editor/editor.css">
   <script>try{document.documentElement.dataset.theme=localStorage.getItem('nuc140:theme')||'dark'}catch{}</script>
+  <script src="/assets/editor/zh-tw.js" defer></script>
+  <script src="/assets/editor/editor.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -30,9 +33,12 @@
     <div class="divider" data-resize="sidebar" role="separator" aria-label="調整題庫寬度"></div>
     <section id="problem-panel" class="problem-panel">
       <div class="panel-heading"><span><span data-icon="book"></span>題目說明</span><span id="problem-label" class="small muted"></span></div>
-      <div class="problem-content"><div id="problem-meta" class="meta-row"></div><h2 id="problem-title"></h2><p id="problem-description" class="lead"></p>
+      <div class="problem-content"><div id="problem-meta" class="meta-row"></div><h2 id="problem-title"></h2>
+        <details class="original-problem" open><summary>簡報原題<span class="small muted">點圖放大</span></summary><div id="original-slides" class="original-slides"></div></details>
+        <h3>整理版題目</h3><p id="problem-description" class="lead"></p>
         <h3>實作要求</h3><ol id="requirements"></ol>
         <h3>驗收項目</h3><div id="checks" class="check-list"></div>
+        <details class="grading-note"><summary>AC 如何判定？</summary><p>程式編譯通過後，平台會依目前練習設定操作模擬板，全部測試通過才判定 AC。AI 導師不參與判分。</p><p id="grading-coverage"></p><p>只測試本次的學號、日期、方向與初始秒數，不會自動遍歷所有設定。AC 代表通過這些模擬測試；真板的時序與接線仍需在課堂驗證。</p><p>修改程式或設定後，舊的 AC 會失效，請重新評測。</p></details>
         <div class="hint-card"><h3><span data-icon="bulb"></span>練習提示</h3><ul id="tips"></ul></div>
         <div class="source-note"><span data-icon="file"></span><span id="source"></span></div>
       </div>
@@ -41,8 +47,8 @@
     <section class="editor-panel">
       <div class="editor-toolbar"><div class="sample-control"><label class="switch"><input id="sample-toggle" type="checkbox" checked><span></span></label><label for="sample-toggle">Sample Code</label><select id="sample-select" aria-label="選擇基礎範例"></select></div><button id="load-template" class="text-button">載入起始碼</button></div>
       <div class="file-tabs" id="file-tabs" role="tablist" aria-label="專案檔案"></div>
-      <div class="editor-caption"><span id="file-description">主要程式</span><div><label for="import-file" class="text-button" tabindex="0">匯入檔案</label><input id="import-file" type="file" accept=".c,.h" hidden><button id="save-version" class="text-button" title="儲存目前所有檔案的版本">存版本</button><button id="versions-button" class="text-button">版本記錄</button></div></div>
-      <div id="code-editor" class="code-editor"><div id="line-numbers" class="line-numbers" aria-hidden="true">1</div><div class="code-area"><pre id="highlight" aria-hidden="true"></pre><textarea id="code" aria-label="C 程式編輯器" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off"></textarea></div></div>
+      <div class="editor-caption"><span id="file-description">主要程式</span><div><button id="reindent-button" class="text-button" title="重新對齊目前檔案的縮排">重新縮排</button><button id="editor-help-button" class="text-button">快捷鍵</button><label for="import-file" class="text-button" tabindex="0">匯入檔案</label><input id="import-file" type="file" accept=".c,.h" hidden><button id="save-version" class="text-button" title="儲存目前所有檔案的版本">存版本</button><button id="versions-button" class="text-button">版本記錄</button></div></div>
+      <div id="code-editor" class="code-editor"><div id="editor-host"></div></div>
       <div class="editor-status"><span id="save-status">自動儲存已啟用</span><span id="cursor-position">Ln 1, Col 1</span><span>C · UTF-8</span></div>
       <div class="run-toolbar"><div><button id="run-button" class="button primary"><span data-icon="play"></span>編譯並執行</button><button id="judge-button" class="button"><span data-icon="check"></span>自動評測</button></div><span id="run-status" class="small muted">準備就緒</span></div>
       <div id="console-divider" class="console-divider" role="separator" tabindex="0" aria-label="調整程式與輸出區高度" aria-orientation="horizontal" aria-controls="code-editor console-panel" title="上下拖曳調整高度，也可用方向鍵調整"></div>
@@ -77,6 +83,8 @@
   </div>
   <dialog id="settings-dialog"><form id="settings-form"><div class="dialog-heading"><h2>練習設定</h2><button type="button" class="text-button close-dialog" aria-label="關閉">✕</button></div><p class="muted">設定會寫入 lab_config.h，並隨 Keil 專案一起匯出。</p><label>學號最後一碼<input name="studentDigit" type="number" min="0" max="9" required></label><label>實驗日期七碼<input name="date" type="text" pattern="[0-9]{7}" maxlength="7" required placeholder="1150921"></label><label>Lab 1.2 測試方向<select name="direction"><option value="1">左向右</option><option value="-1">右向左</option></select></label><label>Lab 3.1 初始秒數<input name="initialSeconds" type="number" min="0" max="59" required></label><p class="small muted">一般練習設為 0；依教材驗收可設為 55。程式需使用對應的 LAB_ 常數。</p><button class="button primary" type="submit">儲存設定</button></form></dialog>
   <dialog id="versions-dialog"><div class="dialog-heading"><h2>版本記錄</h2><button class="text-button close-dialog" aria-label="關閉">✕</button></div><p class="muted small">每個版本包含全部程式檔案、範例來源與練習設定。</p><div id="version-list"></div></dialog>
+  <dialog id="original-dialog"><div class="dialog-heading"><h2 id="original-title">簡報原題</h2><button class="text-button close-dialog" aria-label="關閉原題">✕</button></div><div class="original-image-wrap"><img id="original-image" alt=""></div><p class="small muted">原始簡報題目截圖，保留教材文字、範例與圖示。</p></dialog>
+  <dialog id="editor-help-dialog"><div class="dialog-heading"><h2>編輯快捷鍵</h2><button class="text-button close-dialog" aria-label="關閉快捷鍵">✕</button></div><p class="muted">每層縮排使用 4 個空格，輸入大括號後換行會自動對齊。</p><dl class="shortcut-list"><dt>Tab / Shift+Tab</dt><dd>縮排／取消縮排；支援多行選取</dd><dt>Ctrl+Z / Ctrl+Y</dt><dd>復原／重做，每個檔案各自保留紀錄</dd><dt>Ctrl+/</dt><dd>切換行註解</dd><dt>Ctrl+F / Ctrl+H</dt><dd>搜尋／取代</dd><dt>Alt+↑ / Alt+↓</dt><dd>往上／往下移動目前行</dd><dt>Shift+Alt+↑ / ↓</dt><dd>複製目前行</dd><dt>Ctrl+D / Alt+點選</dt><dd>選取下一個相同字詞／加入游標</dd><dt>Ctrl+Space</dt><dd>顯示 for、if 等片段與板子函式提示</dd><dt>Ctrl+G</dt><dd>跳到指定行</dd><dt>Alt+Z</dt><dd>切換自動換行</dd><dt>Ctrl+S / Ctrl+Enter</dt><dd>儲存作答／編譯並執行</dd></dl><p class="small muted">函式提示涵蓋常用 C 片段與課堂 API；編譯後會標出 GCC 回報的錯誤位置。</p></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

@@ -38,6 +38,28 @@ LABS = [
          checks=["初始狀態與輸入順序", "容量上限", "A/B 指示燈", "兩種刪除方式", "長按不重複輸入"], source="Lab3 (2).pptx，投影片 6", keyLabels={"7":"P", "8":"A", "9":"B"}),
 ]
 
+ORIGINAL_SLIDES = {
+    "lab1-1": [("lab1-14", "Lab1.pptx", 14, "Lab1.1 LED")],
+    "lab1-2": [("lab1-15", "Lab1.pptx", 15, "Lab1.2 左向右旋轉"), ("lab1-16", "Lab1.pptx", 16, "Lab1.3 右向左旋轉")],
+    "lab2-1": [("lab2-27", "Lab2.pptx", 27, "Lab2.1 日期二進位")],
+    "lab2-2": [("lab2-28", "Lab2.pptx", 28, "Lab2.2 漸增跑馬燈")],
+    "lab3-1": [("lab3-4", "Lab3 (2).pptx", 4, "Lab3.1 計時器"), ("lab3-5", "Lab3 (2).pptx", 5, "警報器節奏")],
+    "lab3-2": [("lab3-6", "Lab3 (2).pptx", 6, "Lab3.2 四位數容器")],
+}
+GRADING_COVERAGE = {
+    "lab1-1": "檢查學號末碼的二進位燈號，以及後續 800ms 是否維持相同顯示。",
+    "lab1-2": "觀察 3.2 秒的燈號，檢查指定方向的一個完整循環，以及穩定燈號是否每次只亮一顆。",
+    "lab2-1": "檢查初始全滅，再逐一按住日期的七個按鍵並放開，核對對應燈號與放開後全滅。",
+    "lab2-2": "依序測試左向右漸增、按鍵 2 暫停、按鍵 2 恢復原方向，以及右向左漸增。",
+    "lab3-1": "測試初始顯示、S 開始、P 暫停、R 重設，以及到時後關閉顯示、旋轉燈號、掃頻警報、S/P 無效與 R 可重設。",
+    "lab3-2": "測試初始狀態、長按只輸入一次、輸入順序、未選模式時 P 無效、四位容量上限、A/B 燈號與刪除方式，以及清空後的操作。",
+}
+for lab in LABS:
+    lab["originalSlides"] = [dict(image=f"/assets/problems/{name}.png", source=source, slide=number, title=title)
+                             for name, source, number, title in ORIGINAL_SLIDES[lab["id"]]]
+    lab["gradingCoverage"] = GRADING_COVERAGE[lab["id"]]
+
+
 def get_lab(lab_id):
     return next((lab for lab in LABS if lab["id"] == lab_id), None)
 

@@ -26,6 +26,8 @@ flowchart LR
 | 位置 | 責任 |
 | --- | --- |
 | `web/` | 可縮放四欄工作台、深／淺色主題、程式檔案、板子、版本、聊天 |
+| `web/editor.js`、`web/assets/editor/` | Monaco 編輯器、C 縮排／片段、檔案 model、GCC 診斷與離線資源 |
+| `web/assets/problems/` | 原始簡報題目區域截圖，來源與裁切座標另有記錄 |
 | `arena/curriculum.py` | 六題資料、教材來源、允許的 Sample Code、可攜設定 |
 | `arena/projects.py` | 請求驗證、修改疊加與自包含 Keil ZIP |
 | `arena/simulation.py` | GCC 子程序、雙向訊息、診斷、逾時與生命週期 |
@@ -35,6 +37,12 @@ flowchart LR
 | `server.py` | 本機 HTTP、背景評測／AI 工作、模擬管理 |
 | `vendor/bsp/` | 未修改的課堂 BSP 子集與七個範例 |
 | `tests/` | 端到端 C／板子／評測／ZIP 驗證和 CLI 協定測試 |
+
+## 編輯器與原題
+
+前端每個 Lab／檔案各有一個 Monaco model，同一次開啟工作台時保留游標、捲動位置與復原紀錄。內容變更會立即同步到原有作答資料，沿用自動儲存、版本、評測與硬體匯出的流程。`lab_config.h` 的 model 與 DOM 輸入欄位都設為唯讀，設定面板仍為唯一修改入口。編譯診斷只標示這次 GCC 回報的位置，修改後會清除過期標記。
+
+`tools/build-editor.mjs` 將固定版本的 Monaco C tokenizer 與編輯功能打包在 repo 中，頁面不需連線 CDN。使用者啟動方式維持 Python 本機服務；修改編輯器整合時才需要 Node 建置。原題圖片由題庫資料中的 `originalSlides` 指定，與整理版題目同時顯示。
 
 ## C 的兩條路徑
 

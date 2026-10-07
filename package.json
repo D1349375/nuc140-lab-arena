@@ -1,0 +1,14 @@
+{
+  "name": "nuc140-lab-arena",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:editor": "node tools/build-editor.mjs"
+  },
+  "dependencies": {
+    "monaco-editor": "0.57.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

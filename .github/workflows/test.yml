@@ -19,4 +19,11 @@ jobs:
       - name: Verify native C, Lab grading, export and mentor protocol
         run: python -m unittest discover -v
       - name: Check browser JavaScript
-        run: node --check web/app.js
+        run: |
+          node --check web/app.js
+          node --check web/editor.js
+      - name: Verify bundled editor assets
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build:editor
+          git diff --exit-code -- web/assets/editor
