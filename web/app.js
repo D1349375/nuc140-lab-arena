@@ -126,4 +126,62 @@ $('chat-form').onsubmit=event=>{event.preventDefault();sendMentor($('chat-input'
 window.addEventListener('keydown',event=>{if(/^[1-9]$/.test(event.key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.matches('input,textarea,select')&&!event.repeat&&!document.querySelector('dialog[open]')){event.preventDefault();pressKey(Number(event.key))}});window.addEventListener('keyup',event=>{if(/^[1-9]$/.test(event.key))releaseKey(Number(event.key))});window.addEventListener('blur',releaseKeys);window.addEventListener('beforeunload',persist);
 document.querySelectorAll('[data-resize]').forEach(divider=>divider.addEventListener('pointerdown',event=>{event.preventDefault();const panel=divider.dataset.resize==='sidebar'?document.querySelector('.sidebar'):$(divider.dataset.resize),start=event.clientX,width=panel.getBoundingClientRect().width,reverse=divider.dataset.resize==='right-panel';divider.setPointerCapture(event.pointerId);divider.classList.add('dragging');const move=moveEvent=>{const next=Math.max(reverse?310:135,Math.min(reverse?600:520,width+(moveEvent.clientX-start)*(reverse?-1:1)));panel.style.width=next+'px'};const end=()=>{divider.classList.remove('dragging');divider.removeEventListener('pointermove',move);divider.removeEventListener('pointerup',end);divider.removeEventListener('pointercancel',end);writeStorage(`nuc140:width:${divider.dataset.resize}`,panel.style.width)};divider.addEventListener('pointermove',move);divider.addEventListener('pointerup',end);divider.addEventListener('pointercancel',end)}));
 async function init(){setTheme(document.documentElement.dataset.theme);buildBoard();try{[labs]=await Promise.all([api('/api/labs')]);const selected=readStorage('nuc140:lastLab','lab1-1');await selectLab(labs.some(item=>item.id===selected)?selected:'lab1-1');const env=await api('/api/environment');$('compiler-status').textContent=env.gcc?'GCC '+(env.gccVersion.match(/\d+\.\d+(?:\.\d+)?/)?.[0]||'就緒'):'GCC 未找到';$('compiler-status').className='badge '+(env.gcc?'good':'error');$('agy-status').textContent=env.agy?'agy 已找到':'agy 未找到';$('agy-status').title='AI 呼叫仍需本機 CLI 登入與網路';for(const name of ['sidebar','problem-panel','right-panel']){const width=readStorage(`nuc140:width:${name}`,null);if(width)(name==='sidebar'?document.querySelector('.sidebar'):$(name)).style.width=width}if(readStorage('nuc140:problemHidden',false)&&innerWidth>1130){$('problem-panel').hidden=true;$('problem-divider').hidden=true}}catch(error){setOutput('平台載入失敗：'+error.message,'error');toast(error.message)}}
+function initConsoleResize(){
+  const divider=$('console-divider'),panel=$('console-panel'),editor=$('code-editor');
+  const storageKey='nuc140:height:console';
+  let preferredHeight=readStorage(storageKey,null),drag=null;
+  if(!Number.isFinite(preferredHeight)||preferredHeight<=0)preferredHeight=null;
+  const bounds=()=>{
+    const min=parseFloat(getComputedStyle(panel).minHeight)||104;
+    const codeMin=parseFloat(getComputedStyle(editor).minHeight)||120;
+    const available=panel.getBoundingClientRect().height+editor.getBoundingClientRect().height;
+    return {min,max:Math.max(min,Math.floor(available-codeMin))};
+  };
+  const setHeight=value=>{
+    const {min,max}=bounds(),height=Math.round(Math.max(min,Math.min(max,value)));
+    panel.style.height=height+'px';
+    divider.setAttribute('aria-valuemin',min);
+    divider.setAttribute('aria-valuemax',max);
+    divider.setAttribute('aria-valuenow',height);
+    divider.setAttribute('aria-valuetext',`輸出區高度 ${height} 像素`);
+    return height;
+  };
+  const refresh=()=>{
+    if(!editor.getBoundingClientRect().height)return;
+    if(preferredHeight===null)panel.style.height='';
+    setHeight(preferredHeight??panel.getBoundingClientRect().height);
+  };
+  divider.addEventListener('pointerdown',event=>{
+    if(event.button!==0||!event.isPrimary||drag)return;
+    event.preventDefault();
+    drag={pointerId:event.pointerId,y:event.clientY,height:panel.getBoundingClientRect().height};
+    divider.setPointerCapture(event.pointerId);
+    divider.classList.add('dragging');
+    document.body.classList.add('resizing-console');
+  });
+  divider.addEventListener('pointermove',event=>{
+    if(drag?.pointerId===event.pointerId)preferredHeight=setHeight(drag.height+drag.y-event.clientY);
+  });
+  const finish=event=>{
+    if(drag?.pointerId!==event.pointerId)return;
+    drag=null;
+    divider.classList.remove('dragging');
+    document.body.classList.remove('resizing-console');
+    if(divider.hasPointerCapture(event.pointerId))divider.releasePointerCapture(event.pointerId);
+    preferredHeight=panel.getBoundingClientRect().height;
+    writeStorage(storageKey,preferredHeight);
+  };
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])divider.addEventListener(type,finish);
+  divider.addEventListener('keydown',event=>{
+    const {min,max}=bounds(),height=panel.getBoundingClientRect().height;
+    const next={ArrowUp:height+20,ArrowDown:height-20,Home:min,End:max}[event.key];
+    if(next===undefined)return;
+    event.preventDefault();
+    preferredHeight=setHeight(next);
+    writeStorage(storageKey,preferredHeight);
+  });
+  new ResizeObserver(refresh).observe(document.querySelector('.editor-panel'));
+  refresh();
+}
+initConsoleResize();
 init();
