@@ -87,6 +87,12 @@ def environment():
 class Handler(SimpleHTTPRequestHandler):
     protocol_version="HTTP/1.1"
 
+    def end_headers(self):
+        # This local workbench updates in place; do not reuse old UI scripts.
+        if not urlparse(self.path).path.startswith("/api/"):
+            self.send_header("Cache-Control","no-store")
+        super().end_headers()
+
     def setup(self):
         super().setup()
         # Small frame requests/responses should not wait for delayed TCP ACKs.

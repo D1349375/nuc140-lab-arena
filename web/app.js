@@ -3,6 +3,9 @@ const $ = id => document.getElementById(id);
 const icons = {
   panel:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
   'collapse-left':'<path d="M4 4v16m12-14-6 6 6 6"/>',
+  'expand-right':'<path d="M4 4v16m6-14 6 6-6 6"/>',
+  'collapse-up':'<path d="M4 4h16M6 16l6-6 6 6"/>',
+  'expand-down':'<path d="M4 4h16m-14 6 6 6 6-6"/>',
   sliders:'<path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="2"/><circle cx="16" cy="17" r="2"/>',
   download:'<path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19"/>',
   moon:'<path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11z"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',book:'<path d="M12 5v15M3 5c3-2 6-2 9 0 3-2 6-2 9 0v14c-3-2-6-2-9 0-3-2-6-2-9 0z"/>',
@@ -72,7 +75,7 @@ function resetBoard(){currentFrame={timeUs:0,leds:[0,0,0,0],ledMask:0,segments:A
 function drawFrame(frame){currentFrame=frame;frame.leds.forEach((value,i)=>{$(`led-${i}`).classList.toggle('on',!!value);$(`pin-${i}`).classList.toggle('on',!!value)});frame.segments.forEach((digit,i)=>{for(let seg=0;seg<8;seg++){const node=$(`seg-${i}-${seg}`);const lit=!!(digit.mask&(1<<seg));node.classList.toggle('lit',lit);node.style.opacity=lit?Math.min(1,.5+digit.duty[seg]*1.5):1}});$('buzzer-device').classList.toggle('active',!!frame.buzzer.active);$('sim-time').textContent=(frame.timeUs/1e6).toFixed(2)+' s';$('seven-segments').setAttribute('aria-label',`七段顯示器 ${frame.display||'全暗'}`);updateAudio();const signature=`${frame.ledMask}|${frame.display}|${frame.buzzer.active}`;if(simulation&&signature!==lastBoardSignature){addEvent(`LED ${frame.leds.map(v=>v?'1':'0').join('')} · 顯示 ${frame.display.trim()||'全暗'}${frame.buzzer.active?' · 蜂鳴器啟動':''}`);lastBoardSignature=signature}}
 function addEvent(message){events.push({timeUs:currentFrame?.timeUs||0,message});events=events.slice(-160);renderEvents()}
 function renderEvents(){$('console-events').replaceChildren();if(!events.length){$('console-events').textContent='執行程式後，會記錄按鍵與板子反應。';return}for(const event of events.slice().reverse()){const row=document.createElement('div');row.className='event-row';const time=document.createElement('time');time.textContent=(event.timeUs/1e6).toFixed(2)+'s';const label=document.createElement('span');label.textContent=event.message;row.append(time,label);$('console-events').append(row)}}
-function boardStatus(text,type='muted'){$('simulation-status').textContent=text;$('simulation-status').className='badge '+type}
+function boardStatus(text,type='muted'){$('simulation-status').textContent=text;$('simulation-status').className='badge panel-heading-meta '+type}
 function setOutput(message,type=''){$('console-output').replaceChildren();const pre=document.createElement('div');pre.className=type;pre.textContent=message;$('console-output').append(pre)}
 function selectConsole(name){document.querySelectorAll('[data-console]').forEach(button=>button.classList.toggle('active',button.dataset.console===name));for(const id of ['output','results','events'])$(`console-${id}`).hidden=id!==name}
 async function stopSimulation(){++generation;playing=false;clearTimeout(loopTimer);releaseKeys();updateAudio();const previous=simulation;simulation=null;$('pause-button').disabled=true;$('stop-button').disabled=true;$('reset-button').disabled=true;$('pause-button').innerHTML=icon('pause');boardStatus('待執行');if(previous){try{await api(`/api/simulations/${previous}`,null,'DELETE')}catch{}}}
@@ -130,38 +133,50 @@ function updateAudio(){if(!gain)return;const buzzer=currentFrame?.buzzer;const a
 async function toggleAudio(){if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();oscillator=audioContext.createOscillator();oscillator.type='square';gain=audioContext.createGain();gain.gain.value=0;oscillator.connect(gain);gain.connect(audioContext.destination);oscillator.start()}await audioContext.resume();audioEnabled=!audioEnabled;$('audio-button').innerHTML=icon(audioEnabled?'volume':'volume-off');$('audio-button').title=audioEnabled?'關閉蜂鳴器聲音':'開啟蜂鳴器聲音';$('audio-button').setAttribute('aria-label',$('audio-button').title);updateAudio()}
 function setTheme(theme){document.documentElement.dataset.theme=theme;codeEditor?.setTheme(theme);try{localStorage.setItem('nuc140:theme',theme)}catch{}$('theme-button').innerHTML=icon(theme==='dark'?'sun':'moon');const label=theme==='dark'?'切換淺色模式':'切換深色模式';$('theme-button').title=label;$('theme-button').setAttribute('aria-label',label)}
 const workPanels={
-  sidebar:{panel:'lab-sidebar',divider:'sidebar-divider',toggle:'sidebar-toggle',label:'實驗題庫',storage:'nuc140:sidebarHidden'},
-  problem:{panel:'problem-panel',divider:'problem-divider',toggle:'problem-toggle',label:'題目說明',storage:'nuc140:problemHidden'},
+  sidebar:{panel:'lab-sidebar',body:'sidebar-content',divider:'sidebar-divider',toggle:'sidebar-toggle',label:'實驗題庫',storage:'nuc140:sidebarHidden',horizontal:true},
+  problem:{panel:'problem-panel',body:'problem-content',divider:'problem-divider',toggle:'problem-toggle',label:'題目說明',storage:'nuc140:problemHidden',horizontal:true},
+  simulator:{panel:'simulator-panel',body:'simulator-content',toggle:'simulator-toggle',label:'模擬開發板',storage:'nuc140:simulatorHidden'},
+  mentor:{panel:'mentor-panel',body:'mentor-content',toggle:'mentor-toggle',label:' AI 程式導師',storage:'nuc140:mentorHidden'},
 };
 const isMobileWorkspace=()=>matchMedia('(max-width:1130px)').matches;
-function isWorkPanelVisible(name){
-  return !$(workPanels[name].panel).hidden && (name!=='problem'||!isMobileWorkspace()||document.querySelector('.workspace').dataset.mobilePanel==='problem');
-}
+const isWorkPanelCollapsed=name=>$(workPanels[name].panel).classList.contains('is-collapsed');
 function syncWorkPanelControls(){
   for(const [name,settings] of Object.entries(workPanels)){
-    const visible=isWorkPanelVisible(name),button=$(settings.toggle);
-    const label=(visible?'收合':'展開')+settings.label;
-    button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-expanded',String(visible));
+    const collapsed=isWorkPanelCollapsed(name),button=$(settings.toggle);
+    const label=(collapsed?'展開':'收合')+settings.label;
+    button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-expanded',String(!collapsed));
+    button.innerHTML=icon(settings.horizontal?(collapsed?'expand-right':'collapse-left'):(collapsed?'expand-down':'collapse-up'));
   }
 }
 function selectMobilePanel(name){
-  if(name==='problem')setWorkPanelCollapsed('problem',false);
   document.querySelector('.workspace').dataset.mobilePanel=name;
   document.querySelectorAll('[data-mobile]').forEach(button=>button.classList.toggle('active',button.dataset.mobile===name));
+  if(name==='problem')setWorkPanelCollapsed('problem',false);
+  if(name==='right'&&isWorkPanelCollapsed('simulator')&&isWorkPanelCollapsed('mentor'))setWorkPanelCollapsed('simulator',false);
   syncWorkPanelControls();
 }
 function setWorkPanelCollapsed(name,collapsed,save=true){
-  const settings=workPanels[name],panel=$(settings.panel),focusInside=panel.contains(document.activeElement);
-  panel.hidden=collapsed;$(settings.divider).hidden=collapsed;
-  if(name==='problem'&&collapsed&&isMobileWorkspace()&&document.querySelector('.workspace').dataset.mobilePanel==='problem')selectMobilePanel('editor');
+  const settings=workPanels[name],body=$(settings.body),focusInside=body.contains(document.activeElement);
+  $(settings.panel).classList.toggle('is-collapsed',collapsed);body.hidden=collapsed;
+  if(settings.divider)$(settings.divider).hidden=collapsed;
+  const simulatorCollapsed=isWorkPanelCollapsed('simulator'),mentorCollapsed=isWorkPanelCollapsed('mentor');
+  $('right-panel').classList.toggle('simulator-collapsed',simulatorCollapsed);
+  $('right-panel').classList.toggle('mentor-collapsed',mentorCollapsed);
+  $('right-panel').classList.toggle('all-collapsed',simulatorCollapsed&&mentorCollapsed);
+  $('right-divider').hidden=simulatorCollapsed&&mentorCollapsed;
+  const active=document.querySelector('.workspace').dataset.mobilePanel;
+  if(isMobileWorkspace()&&((name==='problem'&&collapsed&&active==='problem')||(simulatorCollapsed&&mentorCollapsed&&active==='right')))selectMobilePanel('editor');
   if(save)writeStorage(settings.storage,collapsed);
   syncWorkPanelControls();
   if(collapsed&&focusInside)$(settings.toggle).focus({preventScroll:true});
 }
 function toggleWorkPanel(name){
-  const collapsed=isWorkPanelVisible(name);
+  const collapsed=!isWorkPanelCollapsed(name);
   setWorkPanelCollapsed(name,collapsed);
-  if(name==='problem'&&!collapsed&&isMobileWorkspace())selectMobilePanel('problem');
+  if(!collapsed&&isMobileWorkspace()){
+    if(name==='problem')selectMobilePanel('problem');
+    else if(name==='simulator'||name==='mentor')selectMobilePanel('right');
+  }
 }
 function restoreWorkPanels(){
   for(const [name,settings] of Object.entries(workPanels))setWorkPanelCollapsed(name,readStorage(settings.storage,false)===true,false);
@@ -172,8 +187,7 @@ $('pause-button').onclick=()=>{if(!simulation)return;playing=!playing;$('pause-b
 $('audio-button').onclick=()=>toggleAudio().catch(error=>toast(error.message));$('load-template').onclick=loadTemplate;$('save-version').onclick=()=>{snapshot();toast('已儲存全部檔案的版本。')};$('versions-button').onclick=showVersions;$('search').addEventListener('input',buildLabList);
 $('sample-toggle').addEventListener('change',()=>{work.sampleEnabled=$('sample-toggle').checked;writeStorage('nuc140:sampleEnabled',work.sampleEnabled);persist();toast('已變更起始碼選擇；按「載入起始碼」建立新版本。')});$('sample-select').onchange=()=>{work.preferredSample=$('sample-select').value;persist();toast('範例已選擇；載入起始碼後才會套用。')};
 $('import-file').onchange=async()=>{const file=$('import-file').files[0];if(!file)return;if(file.size>120000){toast('單一檔案請控制在 120KB 內。');return}snapshot('匯入檔案前');const name=FILES.includes(file.name)&&file.name!=='lab_config.h'?file.name:'main.c';work.files[name]=await file.text();showFile(name,false);persist();$('import-file').value='';toast(`已匯入 ${name}。`)};
-$('sidebar-toggle').onclick=()=>toggleWorkPanel('sidebar');$('problem-toggle').onclick=()=>toggleWorkPanel('problem');
-$('sidebar-collapse').onclick=()=>setWorkPanelCollapsed('sidebar',true);$('problem-collapse').onclick=()=>setWorkPanelCollapsed('problem',true);
+document.querySelectorAll('[data-panel-toggle]').forEach(button=>button.onclick=()=>toggleWorkPanel(button.dataset.panelToggle));
 window.addEventListener('resize',syncWorkPanelControls);
 document.querySelectorAll('[data-console]').forEach(button=>button.onclick=()=>selectConsole(button.dataset.console));document.querySelectorAll('[data-mobile]').forEach(button=>button.onclick=()=>selectMobilePanel(button.dataset.mobile));
 $('settings-button').onclick=()=>{for(const [name,value] of Object.entries(work.config))$('settings-form').elements[name].value=value;$('settings-dialog').showModal()};$('settings-form').onsubmit=event=>{event.preventDefault();capture();const values=new FormData(event.target);work.config={studentDigit:Number(values.get('studentDigit')),date:values.get('date'),direction:Number(values.get('direction')),initialSeconds:Number(values.get('initialSeconds'))};work.files['lab_config.h']=configHeader(work.config);if(activeFile==='lab_config.h')showFile(activeFile);persist();$('settings-dialog').close();toast('設定已儲存；重新執行程式後套用。')};document.querySelectorAll('.close-dialog').forEach(button=>button.onclick=()=>button.closest('dialog').close());

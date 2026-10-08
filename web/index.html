@@ -5,19 +5,17 @@
   <meta name="color-scheme" content="dark light">
   <title>NUC140 Lab Arena</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=panel-controls-2">
   <link rel="stylesheet" href="/assets/editor/editor.css">
   <script>try{document.documentElement.dataset.theme=localStorage.getItem('nuc140:theme')||'dark'}catch{}</script>
   <script src="/assets/editor/zh-tw.js" defer></script>
   <script src="/assets/editor/editor.js" defer></script>
-  <script src="/app.js" defer></script>
+  <script src="/app.js?v=panel-controls-2" defer></script>
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark">N</span><div><h1>NUC140 <span>Lab Arena</span></h1><p>微處理機系統實驗練習場</p></div><span id="compiler-status" class="badge muted">檢查環境中</span></div>
     <nav class="header-actions" aria-label="工作台工具">
-      <button id="sidebar-toggle" class="button subtle panel-toggle" title="收合實驗題庫" aria-label="收合實驗題庫" aria-controls="lab-sidebar" aria-expanded="true"><span data-icon="panel"></span><span>題庫</span></button>
-      <button id="problem-toggle" class="button subtle panel-toggle" title="收合題目說明" aria-label="收合題目說明" aria-controls="problem-panel" aria-expanded="true"><span data-icon="book"></span><span>題目</span></button>
       <button id="settings-button" class="button subtle" aria-label="練習設定"><span data-icon="sliders"></span><span>練習設定</span></button>
       <button id="export-button" class="button subtle" aria-label="匯出 Keil 專案"><span data-icon="download"></span><span>匯出 Keil 專案</span></button>
       <button id="theme-button" class="button icon-button" aria-label="切換淺色模式" title="切換淺色模式"><span data-icon="sun"></span></button>
@@ -26,15 +24,17 @@
   <nav class="mobile-navigation" aria-label="工作區切換"><button data-mobile="problem">題目</button><button data-mobile="editor" class="active">程式</button><button data-mobile="right">板子與導師</button></nav>
   <div class="workspace" data-mobile-panel="editor">
     <aside id="lab-sidebar" class="sidebar">
-      <div class="sidebar-heading"><span>實驗題庫</span><div class="panel-heading-actions"><span class="counter">6</span><button id="sidebar-collapse" class="panel-collapse" title="收合實驗題庫" aria-label="收合實驗題庫側欄" aria-controls="lab-sidebar"><span data-icon="collapse-left"></span></button></div></div>
+      <div class="sidebar-heading collapsible-heading"><span class="panel-heading-label">實驗題庫</span><div class="panel-heading-actions"><span class="counter panel-heading-meta">6</span><button id="sidebar-toggle" class="panel-collapse" data-panel-toggle="sidebar" title="收合實驗題庫" aria-label="收合實驗題庫" aria-controls="sidebar-content" aria-expanded="true"><span data-icon="collapse-left"></span></button></div></div>
+      <div id="sidebar-content" class="sidebar-content">
       <div class="search"><span data-icon="search"></span><input id="search" placeholder="搜尋題目…" aria-label="搜尋題目"></div>
       <div id="lab-list" class="lab-list"></div>
       <div class="sidebar-bottom"><span class="status-dot"></span>Nu-LB-NUC140<span class="small muted">BSP v1.4.5</span></div>
+      </div>
     </aside>
     <div id="sidebar-divider" class="divider" data-resize="sidebar" role="separator" aria-label="調整題庫寬度"></div>
     <section id="problem-panel" class="problem-panel">
-      <div class="panel-heading"><span><span data-icon="book"></span>題目說明</span><div class="panel-heading-actions"><span id="problem-label" class="small muted"></span><button id="problem-collapse" class="panel-collapse" title="收合題目說明" aria-label="收合題目說明面板" aria-controls="problem-panel"><span data-icon="collapse-left"></span></button></div></div>
-      <div class="problem-content"><div id="problem-meta" class="meta-row"></div><h2 id="problem-title"></h2>
+      <div class="panel-heading collapsible-heading"><span class="panel-heading-label"><span data-icon="book"></span>題目說明</span><div class="panel-heading-actions"><span id="problem-label" class="small muted panel-heading-meta"></span><button id="problem-toggle" class="panel-collapse" data-panel-toggle="problem" title="收合題目說明" aria-label="收合題目說明" aria-controls="problem-content" aria-expanded="true"><span data-icon="collapse-left"></span></button></div></div>
+      <div id="problem-content" class="problem-content"><div id="problem-meta" class="meta-row"></div><h2 id="problem-title"></h2>
         <details class="original-problem" open><summary>簡報原題<span class="small muted">點圖放大</span></summary><div id="original-slides" class="original-slides"></div></details>
         <h3>整理版題目</h3><p id="problem-description" class="lead"></p>
         <h3>實作要求</h3><ol id="requirements"></ol>
@@ -55,9 +55,10 @@
       <div id="console-divider" class="console-divider" role="separator" tabindex="0" aria-label="調整程式與輸出區高度" aria-orientation="horizontal" aria-controls="code-editor console-panel" title="上下拖曳調整高度，也可用方向鍵調整"></div>
       <div id="console-panel" class="console-panel"><div class="console-tabs" role="tablist"><button data-console="output" class="active">編譯與輸出</button><button data-console="results">評測結果<span id="result-count"></span></button><button data-console="events">事件紀錄</button></div><div id="console-output" class="console-content"><div class="empty-console"><span data-icon="terminal"></span><p>寫好程式後，讓板子告訴你結果。</p><span>編譯訊息與程式輸出會顯示在這裡。</span></div></div><div id="console-results" class="console-content" hidden></div><div id="console-events" class="console-content" hidden></div></div>
     </section>
-    <div class="divider" data-resize="right-panel" role="separator" aria-label="調整板子與導師寬度"></div>
+    <div id="right-divider" class="divider" data-resize="right-panel" role="separator" aria-label="調整板子與導師寬度"></div>
     <aside id="right-panel" class="right-panel">
-      <section class="simulator-panel"><div class="panel-heading"><span><span data-icon="cpu"></span>模擬開發板</span><span id="simulation-status" class="badge muted">待執行</span></div>
+      <section id="simulator-panel" class="simulator-panel"><div class="panel-heading collapsible-heading"><span class="panel-heading-label"><span data-icon="cpu"></span>模擬開發板</span><div class="panel-heading-actions"><span id="simulation-status" class="badge muted panel-heading-meta">待執行</span><button id="simulator-toggle" class="panel-collapse" data-panel-toggle="simulator" title="收合模擬開發板" aria-label="收合模擬開發板" aria-controls="simulator-content" aria-expanded="true"><span data-icon="collapse-up"></span></button></div></div>
+        <div id="simulator-content" class="simulator-content">
         <div class="board-wrap"><div id="board" class="pcb" tabindex="0" aria-label="NUC140 模擬開發板，可按數字鍵 1 到 9">
           <span class="screw s1"></span><span class="screw s2"></span><span class="screw s3"></span><span class="screw s4"></span>
           <div class="board-port port-usb"></div><div class="board-port port-serial"></div><div class="board-chip small-chip"></div><span class="board-silkscreen nulink">Nu-Link</span>
@@ -73,12 +74,15 @@
         <div class="board-readout"><div id="led-readout" class="pin-readout"></div><span id="sim-time" class="mono">0.00 s</span></div>
         <div class="board-controls"><button id="pause-button" class="button icon-button" disabled aria-label="暫停模擬" title="暫停模擬"><span data-icon="pause"></span></button><button id="reset-button" class="button icon-button" disabled aria-label="重新執行程式" title="重新執行程式"><span data-icon="reset"></span></button><button id="stop-button" class="button icon-button" disabled aria-label="停止模擬" title="停止模擬"><span data-icon="stop"></span></button><select id="speed" aria-label="模擬速度"><option value="1">1× 速度</option><option value="2">2× 速度</option><option value="3">3× 速度</option><option value="0.25">0.25× 慢速</option></select><button id="audio-button" class="button icon-button" aria-label="開啟蜂鳴器聲音" title="開啟蜂鳴器聲音"><span data-icon="volume-off"></span></button></div>
         <div class="board-note"><span data-icon="mouse"></span>按住／放開按鍵，或點選板子後使用數字鍵。</div>
+        </div>
       </section>
-      <section class="mentor-panel"><div class="panel-heading"><span><span data-icon="mentor"></span>AI 程式導師</span><span id="agy-status" class="small muted">Antigravity CLI</span></div>
+      <section id="mentor-panel" class="mentor-panel"><div class="panel-heading collapsible-heading"><span class="panel-heading-label"><span data-icon="mentor"></span>AI 程式導師</span><div class="panel-heading-actions"><span id="agy-status" class="small muted panel-heading-meta">Antigravity CLI</span><button id="mentor-toggle" class="panel-collapse" data-panel-toggle="mentor" title="收合 AI 程式導師" aria-label="收合 AI 程式導師" aria-controls="mentor-content" aria-expanded="true"><span data-icon="collapse-up"></span></button></div></div>
+        <div id="mentor-content" class="mentor-content">
         <div class="mentor-context"><span class="status-dot"></span>導師會參考程式、題目與板子紀錄<button id="clear-chat" class="text-button" title="清除目前題目的對話">清除</button></div>
         <div id="chat-messages" class="chat-messages"><div class="mentor-welcome"><div class="mentor-avatar"><span data-icon="mentor"></span></div><h3>一起看懂板子的反應</h3><p>可以問我程式怎麼運作、按鍵為什麼重複觸發，或請我分析評測沒有通過的原因。</p><button id="analyze-button" class="button"><span data-icon="spark"></span>分析目前程式</button></div></div>
         <form id="chat-form" class="chat-composer"><textarea id="chat-input" rows="2" placeholder="描述你的思路，或問一個問題…" aria-label="向 AI 導師提問"></textarea><button id="send-chat" class="button primary icon-button" type="submit" aria-label="送出提問"><span data-icon="send"></span></button></form>
         <div class="mentor-footer">提示優先 · 使用你本機的 Antigravity 登入</div>
+        </div>
       </section>
     </aside>
   </div>
