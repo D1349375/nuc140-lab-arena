@@ -106,7 +106,7 @@ async function grade(){
   }finally{judgeBusy=false;$('judge-button').disabled=false}
 }
 async function exportKeil(){capture();persist();try{const response=await fetch('/api/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});if(!response.ok)throw Error((await response.json()).error);const url=URL.createObjectURL(await response.blob());const anchor=document.createElement('a');anchor.href=url;anchor.download=`nuc140-${lab.id}-keil.zip`;document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);toast('Keil 專案已匯出，包含你的程式與必要 BSP。')}catch(error){toast(error.message)}}
-function renderMarkdown(container,text){const blocks=text.split(/```(?:[\w+-]*)\n?/);blocks.forEach((block,index)=>{if(index%2){const pre=document.createElement('pre');pre.textContent=block.replace(/\n$/,'');container.append(pre)}else{for(const line of block.split('\n')){const p=document.createElement('div');if(/^#{1,4}\s/.test(line)){p.style.fontWeight='600';p.style.marginTop='7px';p.textContent=line.replace(/^#{1,4}\s/,'')}else{line.split(/(\*\*.*?\*\*|`[^`]+`)/g).forEach(part=>{const bold=part.startsWith('**'),code=part.startsWith('`');const node=document.createElement(bold?'strong':code?'code':'span');node.textContent=bold?part.slice(2,-2):code?part.slice(1,-1):part;p.append(node)})}container.append(p)}}})}
+function renderMarkdown(container,text){MentorMarkdown.renderMarkdown(container,text)}
 function renderChat(){const chat=$('chat-messages');if(!work.chat.length){chat.innerHTML='<div class="mentor-welcome"><div class="mentor-avatar">'+icon('mentor')+'</div><h3>一起看懂板子的反應</h3><p>可以問我程式怎麼運作、按鍵為什麼重複觸發，或請我分析評測沒有通過的原因。</p><button id="analyze-button" class="button">'+icon('spark')+'分析目前程式</button></div>';$('analyze-button').onclick=()=>sendMentor('請分析我的程式思路，並根據目前模擬與評測紀錄指出需要調整的地方。先給提示，讓我自己修改。');return}chat.replaceChildren();for(const message of work.chat){const article=document.createElement('article');article.className='chat-message '+message.role;const role=document.createElement('div');role.className='chat-role';role.innerHTML=icon(message.role==='user'?'file':'mentor')+(message.role==='user'?'你':'AI 導師');const body=document.createElement('div');body.className='chat-body';renderMarkdown(body,message.content);article.append(role,body);chat.append(article)}if(mentorBusy){const pending=document.createElement('p');pending.className='small muted';pending.textContent='導師正在閱讀程式與板子紀錄…';chat.append(pending)}chat.scrollTop=chat.scrollHeight}
 async function sendMentor(message){
   if(mentorBusy)return;
@@ -253,4 +253,5 @@ function initConsoleResize(){
   refresh();
 }
 initConsoleResize();
+initMentorResize();
 init();

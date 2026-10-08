@@ -16,14 +16,20 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
       - name: Verify native C, Lab grading, export and mentor protocol
         run: python -m unittest discover -v
       - name: Check browser JavaScript
         run: |
           node --check web/app.js
           node --check web/editor.js
-      - name: Verify bundled editor assets
+          node --check web/mentor-resize.js
+          node --check web/markdown.js
+      - name: Verify mentor rendering and bundled browser assets
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
-          npm run build:editor
-          git diff --exit-code -- web/assets/editor
+          npm run test:markdown
+          npm run build
+          git diff --exit-code -- web/assets/editor web/assets/mentor

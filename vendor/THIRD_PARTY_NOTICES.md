@@ -26,6 +26,15 @@ The source integration is `web/editor.js`; `tools/build-editor.mjs` reproduces
 the bundle using the pinned dependencies in `package-lock.json`. Monaco is not
 part of exported Keil projects.
 
+## Mentor Markdown and mathematics
+
+The mentor renderer bundles the official `marked` 18.1.0, `dompurify` 3.4.16,
+and `katex` 0.19.0 npm packages, including KaTeX's distributed fonts, under
+`web/assets/mentor`. Their package licences and bundled legal notices are kept
+in that directory. DOMPurify's additional MPL licence text is retained too.
+`tools/build-mentor.mjs` reproduces these resources from the pinned lockfile.
+The test-only `jsdom` dependency is not shipped in the browser or Keil exports.
+
 ## Course question screenshots
 
 `web/assets/problems` contains cropped screenshots rendered from the user's

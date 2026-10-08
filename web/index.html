@@ -7,9 +7,12 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css?v=panel-controls-2">
   <link rel="stylesheet" href="/assets/editor/editor.css">
+  <link rel="stylesheet" href="/assets/mentor/mentor.css">
   <script>try{document.documentElement.dataset.theme=localStorage.getItem('nuc140:theme')||'dark'}catch{}</script>
   <script src="/assets/editor/zh-tw.js" defer></script>
   <script src="/assets/editor/editor.js" defer></script>
+  <script src="/assets/mentor/mentor.js" defer></script>
+  <script src="/mentor-resize.js" defer></script>
   <script src="/app.js?v=panel-controls-2" defer></script>
 </head>
 <body>
@@ -76,6 +79,7 @@
         <div class="board-note"><span data-icon="mouse"></span>按住／放開按鍵，或點選板子後使用數字鍵。</div>
         </div>
       </section>
+      <div id="mentor-divider" class="mentor-divider" role="separator" tabindex="0" aria-label="調整模擬板與 AI 導師大小" aria-orientation="horizontal" aria-controls="simulator-panel mentor-panel" title="拖曳調整大小；雙擊恢復預設，也可用方向鍵調整"></div>
       <section id="mentor-panel" class="mentor-panel"><div class="panel-heading collapsible-heading"><span class="panel-heading-label"><span data-icon="mentor"></span>AI 程式導師</span><div class="panel-heading-actions"><span id="agy-status" class="small muted panel-heading-meta">Antigravity CLI</span><button id="mentor-toggle" class="panel-collapse" data-panel-toggle="mentor" title="收合 AI 程式導師" aria-label="收合 AI 程式導師" aria-controls="mentor-content" aria-expanded="true"><span data-icon="collapse-up"></span></button></div></div>
         <div id="mentor-content" class="mentor-content">
         <div class="mentor-context"><span class="status-dot"></span>導師會參考程式、題目與板子紀錄<button id="clear-chat" class="text-button" title="清除目前題目的對話">清除</button></div>

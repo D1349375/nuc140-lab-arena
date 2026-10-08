@@ -27,6 +27,8 @@ flowchart LR
 | --- | --- |
 | `web/` | 可縮放四欄工作台、深／淺色主題、程式檔案、板子、版本、聊天 |
 | `web/editor.js`、`web/assets/editor/` | Monaco 編輯器、C 縮排／片段、檔案 model、GCC 診斷與離線資源 |
+| `web/markdown.js`、`web/assets/mentor/` | Markdown 結構、KaTeX 公式、HTML 清理與離線字型 |
+| `web/mentor-resize.js` | 模擬板／導師分隔線、方向鍵、比例保存與收合後復原 |
 | `web/assets/problems/` | 原始簡報題目區域截圖，來源與裁切座標另有記錄 |
 | `arena/curriculum.py` | 六題資料、教材來源、允許的 Sample Code、可攜設定 |
 | `arena/projects.py` | 請求驗證、修改疊加與自包含 Keil ZIP |
@@ -78,6 +80,10 @@ LED PC12–PC15 低電位點亮；七段位選 PC4–PC7 高電位致能。段�
 服務只綁定 `127.0.0.1`，驗證 Host 與 Origin。原始碼檔名採固定白名單，限制來源大小。這些限制不是原生 C 沙箱；平台是個人本機練習用途。
 
 ## AI 導師
+
+回覆由 Marked 解析 Markdown，公式在解析階段交給 KaTeX，最後以 DOMPurify 清理 HTML。公式支援行內與獨立區塊，下標與反斜線不會先被當作 Markdown 改寫；程式碼區塊保持原文。渲染器、字型與授權文件由 `tools/build-mentor.mjs` 打包，使用者不需連線 CDN。渲染測試涵蓋原本未顯示的二進位公式、中文粗體、巢狀清單、表格、程式碼與不可信內容。
+
+右欄的板子與導師共用可拖曳分隔線，上下排列調整高度、左右排列調整寬度，比例分開存入 localStorage。面板收合時暫停套用比例，展開再復原；原本的聊天與模擬流程不受影響。
 
 CLI 採官方 [headless NDJSON 協定](https://www.antigravity.google/docs/cli/headless/)，以 stdin 傳送題目、程式、設定和近期模擬資料，避開 Windows 參數長度限制。每次呼叫使用獨立暫存工作區、plan 模式和 CLI sandbox，保留預設 permission review，不啟用自動略過權限。
 
