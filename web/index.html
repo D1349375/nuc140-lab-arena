@@ -16,7 +16,8 @@
   <header class="topbar">
     <div class="brand"><span class="brand-mark">N</span><div><h1>NUC140 <span>Lab Arena</span></h1><p>微處理機系統實驗練習場</p></div><span id="compiler-status" class="badge muted">檢查環境中</span></div>
     <nav class="header-actions" aria-label="工作台工具">
-      <button id="problem-toggle" class="button subtle" title="收合或展開題目" aria-label="收合或展開題目"><span data-icon="panel"></span><span>題目</span></button>
+      <button id="sidebar-toggle" class="button subtle panel-toggle" title="收合實驗題庫" aria-label="收合實驗題庫" aria-controls="lab-sidebar" aria-expanded="true"><span data-icon="panel"></span><span>題庫</span></button>
+      <button id="problem-toggle" class="button subtle panel-toggle" title="收合題目說明" aria-label="收合題目說明" aria-controls="problem-panel" aria-expanded="true"><span data-icon="book"></span><span>題目</span></button>
       <button id="settings-button" class="button subtle" aria-label="練習設定"><span data-icon="sliders"></span><span>練習設定</span></button>
       <button id="export-button" class="button subtle" aria-label="匯出 Keil 專案"><span data-icon="download"></span><span>匯出 Keil 專案</span></button>
       <button id="theme-button" class="button icon-button" aria-label="切換淺色模式" title="切換淺色模式"><span data-icon="sun"></span></button>
@@ -24,15 +25,15 @@
   </header>
   <nav class="mobile-navigation" aria-label="工作區切換"><button data-mobile="problem">題目</button><button data-mobile="editor" class="active">程式</button><button data-mobile="right">板子與導師</button></nav>
   <div class="workspace" data-mobile-panel="editor">
-    <aside class="sidebar">
-      <div class="sidebar-heading"><span>實驗題庫</span><span class="counter">6</span></div>
+    <aside id="lab-sidebar" class="sidebar">
+      <div class="sidebar-heading"><span>實驗題庫</span><div class="panel-heading-actions"><span class="counter">6</span><button id="sidebar-collapse" class="panel-collapse" title="收合實驗題庫" aria-label="收合實驗題庫側欄" aria-controls="lab-sidebar"><span data-icon="collapse-left"></span></button></div></div>
       <div class="search"><span data-icon="search"></span><input id="search" placeholder="搜尋題目…" aria-label="搜尋題目"></div>
       <div id="lab-list" class="lab-list"></div>
       <div class="sidebar-bottom"><span class="status-dot"></span>Nu-LB-NUC140<span class="small muted">BSP v1.4.5</span></div>
     </aside>
-    <div class="divider" data-resize="sidebar" role="separator" aria-label="調整題庫寬度"></div>
+    <div id="sidebar-divider" class="divider" data-resize="sidebar" role="separator" aria-label="調整題庫寬度"></div>
     <section id="problem-panel" class="problem-panel">
-      <div class="panel-heading"><span><span data-icon="book"></span>題目說明</span><span id="problem-label" class="small muted"></span></div>
+      <div class="panel-heading"><span><span data-icon="book"></span>題目說明</span><div class="panel-heading-actions"><span id="problem-label" class="small muted"></span><button id="problem-collapse" class="panel-collapse" title="收合題目說明" aria-label="收合題目說明面板" aria-controls="problem-panel"><span data-icon="collapse-left"></span></button></div></div>
       <div class="problem-content"><div id="problem-meta" class="meta-row"></div><h2 id="problem-title"></h2>
         <details class="original-problem" open><summary>簡報原題<span class="small muted">點圖放大</span></summary><div id="original-slides" class="original-slides"></div></details>
         <h3>整理版題目</h3><p id="problem-description" class="lead"></p>

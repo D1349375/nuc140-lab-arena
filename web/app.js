@@ -2,6 +2,7 @@
 const $ = id => document.getElementById(id);
 const icons = {
   panel:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
+  'collapse-left':'<path d="M4 4v16m12-14-6 6 6 6"/>',
   sliders:'<path d="M4 7h16M4 17h16"/><circle cx="8" cy="7" r="2"/><circle cx="16" cy="17" r="2"/>',
   download:'<path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19"/>',
   moon:'<path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11z"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',book:'<path d="M12 5v15M3 5c3-2 6-2 9 0 3-2 6-2 9 0v14c-3-2-6-2-9 0-3-2-6-2-9 0z"/>',
@@ -128,19 +129,58 @@ async function sendMentor(message){
 function updateAudio(){if(!gain)return;const buzzer=currentFrame?.buzzer;const active=audioEnabled&&playing&&buzzer?.active;gain.gain.setTargetAtTime(active ? .025 : 0,audioContext.currentTime,.025);if(active)oscillator.frequency.setTargetAtTime(Math.max(100,Math.min(3000,buzzer.frequency||800)),audioContext.currentTime,.015)}
 async function toggleAudio(){if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)();oscillator=audioContext.createOscillator();oscillator.type='square';gain=audioContext.createGain();gain.gain.value=0;oscillator.connect(gain);gain.connect(audioContext.destination);oscillator.start()}await audioContext.resume();audioEnabled=!audioEnabled;$('audio-button').innerHTML=icon(audioEnabled?'volume':'volume-off');$('audio-button').title=audioEnabled?'關閉蜂鳴器聲音':'開啟蜂鳴器聲音';$('audio-button').setAttribute('aria-label',$('audio-button').title);updateAudio()}
 function setTheme(theme){document.documentElement.dataset.theme=theme;codeEditor?.setTheme(theme);try{localStorage.setItem('nuc140:theme',theme)}catch{}$('theme-button').innerHTML=icon(theme==='dark'?'sun':'moon');const label=theme==='dark'?'切換淺色模式':'切換深色模式';$('theme-button').title=label;$('theme-button').setAttribute('aria-label',label)}
+const workPanels={
+  sidebar:{panel:'lab-sidebar',divider:'sidebar-divider',toggle:'sidebar-toggle',label:'實驗題庫',storage:'nuc140:sidebarHidden'},
+  problem:{panel:'problem-panel',divider:'problem-divider',toggle:'problem-toggle',label:'題目說明',storage:'nuc140:problemHidden'},
+};
+const isMobileWorkspace=()=>matchMedia('(max-width:1130px)').matches;
+function isWorkPanelVisible(name){
+  return !$(workPanels[name].panel).hidden && (name!=='problem'||!isMobileWorkspace()||document.querySelector('.workspace').dataset.mobilePanel==='problem');
+}
+function syncWorkPanelControls(){
+  for(const [name,settings] of Object.entries(workPanels)){
+    const visible=isWorkPanelVisible(name),button=$(settings.toggle);
+    const label=(visible?'收合':'展開')+settings.label;
+    button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-expanded',String(visible));
+  }
+}
+function selectMobilePanel(name){
+  if(name==='problem')setWorkPanelCollapsed('problem',false);
+  document.querySelector('.workspace').dataset.mobilePanel=name;
+  document.querySelectorAll('[data-mobile]').forEach(button=>button.classList.toggle('active',button.dataset.mobile===name));
+  syncWorkPanelControls();
+}
+function setWorkPanelCollapsed(name,collapsed,save=true){
+  const settings=workPanels[name],panel=$(settings.panel),focusInside=panel.contains(document.activeElement);
+  panel.hidden=collapsed;$(settings.divider).hidden=collapsed;
+  if(name==='problem'&&collapsed&&isMobileWorkspace()&&document.querySelector('.workspace').dataset.mobilePanel==='problem')selectMobilePanel('editor');
+  if(save)writeStorage(settings.storage,collapsed);
+  syncWorkPanelControls();
+  if(collapsed&&focusInside)$(settings.toggle).focus({preventScroll:true});
+}
+function toggleWorkPanel(name){
+  const collapsed=isWorkPanelVisible(name);
+  setWorkPanelCollapsed(name,collapsed);
+  if(name==='problem'&&!collapsed&&isMobileWorkspace())selectMobilePanel('problem');
+}
+function restoreWorkPanels(){
+  for(const [name,settings] of Object.entries(workPanels))setWorkPanelCollapsed(name,readStorage(settings.storage,false)===true,false);
+}
 $('reindent-button').onclick=()=>codeEditor.reindent();$('editor-help-button').onclick=()=>$('editor-help-dialog').showModal();
 $('theme-button').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');$('run-button').onclick=runSimulation;$('judge-button').onclick=grade;$('export-button').onclick=exportKeil;$('stop-button').onclick=()=>stopSimulation().then(()=>$('run-status').textContent='模擬已停止');$('reset-button').onclick=runSimulation;
 $('pause-button').onclick=()=>{if(!simulation)return;playing=!playing;$('pause-button').innerHTML=icon(playing?'pause':'play');$('pause-button').title=playing?'暫停模擬':'繼續模擬';$('pause-button').setAttribute('aria-label',$('pause-button').title);boardStatus(playing?'執行中':'已暫停',playing?'running':'muted');updateAudio();if(playing&&!stepping)loop(generation)};
 $('audio-button').onclick=()=>toggleAudio().catch(error=>toast(error.message));$('load-template').onclick=loadTemplate;$('save-version').onclick=()=>{snapshot();toast('已儲存全部檔案的版本。')};$('versions-button').onclick=showVersions;$('search').addEventListener('input',buildLabList);
 $('sample-toggle').addEventListener('change',()=>{work.sampleEnabled=$('sample-toggle').checked;writeStorage('nuc140:sampleEnabled',work.sampleEnabled);persist();toast('已變更起始碼選擇；按「載入起始碼」建立新版本。')});$('sample-select').onchange=()=>{work.preferredSample=$('sample-select').value;persist();toast('範例已選擇；載入起始碼後才會套用。')};
 $('import-file').onchange=async()=>{const file=$('import-file').files[0];if(!file)return;if(file.size>120000){toast('單一檔案請控制在 120KB 內。');return}snapshot('匯入檔案前');const name=FILES.includes(file.name)&&file.name!=='lab_config.h'?file.name:'main.c';work.files[name]=await file.text();showFile(name,false);persist();$('import-file').value='';toast(`已匯入 ${name}。`)};
-$('problem-toggle').onclick=()=>{if(innerWidth<=1130){document.querySelector('[data-mobile="problem"]').click();return}const hidden=!$('problem-panel').hidden;$('problem-panel').hidden=hidden;$('problem-divider').hidden=hidden;writeStorage('nuc140:problemHidden',hidden)};
-document.querySelectorAll('[data-console]').forEach(button=>button.onclick=()=>selectConsole(button.dataset.console));document.querySelectorAll('[data-mobile]').forEach(button=>button.onclick=()=>{document.querySelector('.workspace').dataset.mobilePanel=button.dataset.mobile;document.querySelectorAll('[data-mobile]').forEach(other=>other.classList.toggle('active',other===button))});
+$('sidebar-toggle').onclick=()=>toggleWorkPanel('sidebar');$('problem-toggle').onclick=()=>toggleWorkPanel('problem');
+$('sidebar-collapse').onclick=()=>setWorkPanelCollapsed('sidebar',true);$('problem-collapse').onclick=()=>setWorkPanelCollapsed('problem',true);
+window.addEventListener('resize',syncWorkPanelControls);
+document.querySelectorAll('[data-console]').forEach(button=>button.onclick=()=>selectConsole(button.dataset.console));document.querySelectorAll('[data-mobile]').forEach(button=>button.onclick=()=>selectMobilePanel(button.dataset.mobile));
 $('settings-button').onclick=()=>{for(const [name,value] of Object.entries(work.config))$('settings-form').elements[name].value=value;$('settings-dialog').showModal()};$('settings-form').onsubmit=event=>{event.preventDefault();capture();const values=new FormData(event.target);work.config={studentDigit:Number(values.get('studentDigit')),date:values.get('date'),direction:Number(values.get('direction')),initialSeconds:Number(values.get('initialSeconds'))};work.files['lab_config.h']=configHeader(work.config);if(activeFile==='lab_config.h')showFile(activeFile);persist();$('settings-dialog').close();toast('設定已儲存；重新執行程式後套用。')};document.querySelectorAll('.close-dialog').forEach(button=>button.onclick=()=>button.closest('dialog').close());
 $('chat-form').onsubmit=event=>{event.preventDefault();sendMentor($('chat-input').value)};$('chat-input').onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendMentor(event.target.value)}};$('clear-chat').onclick=()=>{if(mentorBusy)return;work.chat=[];persist();renderChat()};
 window.addEventListener('keydown',event=>{if(/^[1-9]$/.test(event.key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.matches('input,textarea,select')&&!event.target.closest('.monaco-editor')&&!event.repeat&&!document.querySelector('dialog[open]')){event.preventDefault();pressKey(Number(event.key))}});window.addEventListener('keyup',event=>{if(/^[1-9]$/.test(event.key))releaseKey(Number(event.key))});window.addEventListener('blur',releaseKeys);window.addEventListener('beforeunload',persist);
 document.querySelectorAll('[data-resize]').forEach(divider=>divider.addEventListener('pointerdown',event=>{event.preventDefault();const panel=divider.dataset.resize==='sidebar'?document.querySelector('.sidebar'):$(divider.dataset.resize),start=event.clientX,width=panel.getBoundingClientRect().width,reverse=divider.dataset.resize==='right-panel';divider.setPointerCapture(event.pointerId);divider.classList.add('dragging');const move=moveEvent=>{const next=Math.max(reverse?310:135,Math.min(reverse?600:520,width+(moveEvent.clientX-start)*(reverse?-1:1)));panel.style.width=next+'px'};const end=()=>{divider.classList.remove('dragging');divider.removeEventListener('pointermove',move);divider.removeEventListener('pointerup',end);divider.removeEventListener('pointercancel',end);writeStorage(`nuc140:width:${divider.dataset.resize}`,panel.style.width)};divider.addEventListener('pointermove',move);divider.addEventListener('pointerup',end);divider.addEventListener('pointercancel',end)}));
-async function init(){setTheme(document.documentElement.dataset.theme);buildBoard();try{codeEditor=ArenaEditor.createWorkbench($('editor-host'),{onChange:()=>{capture();cursorPosition();scheduleSave()},onCursor:cursorPosition,onSave:()=>{persist();toast('作答已儲存。')},onRun:runSimulation});[labs]=await Promise.all([api('/api/labs')]);const selected=readStorage('nuc140:lastLab','lab1-1');await selectLab(labs.some(item=>item.id===selected)?selected:'lab1-1');const env=await api('/api/environment');$('compiler-status').textContent=env.gcc?'GCC '+(env.gccVersion.match(/\d+\.\d+(?:\.\d+)?/)?.[0]||'就緒'):'GCC 未找到';$('compiler-status').className='badge '+(env.gcc?'good':'error');$('agy-status').textContent=env.agy?'agy 已找到':'agy 未找到';$('agy-status').title='AI 呼叫仍需本機 CLI 登入與網路';for(const name of ['sidebar','problem-panel','right-panel']){const width=readStorage(`nuc140:width:${name}`,null);if(width)(name==='sidebar'?document.querySelector('.sidebar'):$(name)).style.width=width}if(readStorage('nuc140:problemHidden',false)&&innerWidth>1130){$('problem-panel').hidden=true;$('problem-divider').hidden=true}}catch(error){setOutput('平台載入失敗：'+error.message,'error');toast(error.message)}}
+async function init(){setTheme(document.documentElement.dataset.theme);buildBoard();restoreWorkPanels();try{codeEditor=ArenaEditor.createWorkbench($('editor-host'),{onChange:()=>{capture();cursorPosition();scheduleSave()},onCursor:cursorPosition,onSave:()=>{persist();toast('作答已儲存。')},onRun:runSimulation});[labs]=await Promise.all([api('/api/labs')]);const selected=readStorage('nuc140:lastLab','lab1-1');await selectLab(labs.some(item=>item.id===selected)?selected:'lab1-1');const env=await api('/api/environment');$('compiler-status').textContent=env.gcc?'GCC '+(env.gccVersion.match(/\d+\.\d+(?:\.\d+)?/)?.[0]||'就緒'):'GCC 未找到';$('compiler-status').className='badge '+(env.gcc?'good':'error');$('agy-status').textContent=env.agy?'agy 已找到':'agy 未找到';$('agy-status').title='AI 呼叫仍需本機 CLI 登入與網路';for(const name of ['sidebar','problem-panel','right-panel']){const width=readStorage(`nuc140:width:${name}`,null);if(width)(name==='sidebar'?document.querySelector('.sidebar'):$(name)).style.width=width}}catch(error){setOutput('平台載入失敗：'+error.message,'error');toast(error.message)}}
 function initConsoleResize(){
   const divider=$('console-divider'),panel=$('console-panel'),editor=$('code-editor');
   const storageKey='nuc140:height:console';

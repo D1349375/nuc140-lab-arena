@@ -4,6 +4,8 @@ Nu-LB-NUC140 微處理機系統實驗練習平台。沿用 [CPE Practice Arena](
 
 第一版以課程 Lab 1–3 與 `Nu-LB-NUC140_BSP3.00.004_v1.4.5` 為基礎：寫 C、操作板子、執行自動評測，再匯出課堂 Keil 專案。
 
+實驗題庫與題目說明可各自收合：點面板標題旁的箭頭收合，再用頂端「題庫」／「題目」展開。平台會記住收合狀態與原本寬度，重新整理仍保留；較窄畫面可收合題庫讓目前工作區使用更多空間。
+
 ## 啟動
 
 需要 Python 3.10 以上與 GCC。Windows 建議使用既有 MinGW GCC；Python 不需要額外套件。AI 導師另外需要已安裝並登入的 [Antigravity CLI](https://www.antigravity.google/docs/cli/install/)。
