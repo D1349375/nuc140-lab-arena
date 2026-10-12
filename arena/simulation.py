@@ -13,8 +13,7 @@ from .curriculum import ROOT
 
 RUNTIME = ROOT / ".runtime"
 RUNTIME.mkdir(exist_ok=True)
-# BSP v1.4.5 draws 9 without its bottom segment; accept both glyphs.
-SEGMENT_DIGITS = {0x3f:"0", 0x06:"1", 0x5b:"2", 0x4f:"3", 0x66:"4", 0x6d:"5", 0x7d:"6", 0x07:"7", 0x7f:"8", 0x6f:"9", 0x67:"9", 0:" "}
+SEGMENT_DIGITS = {0x3f:"0", 0x06:"1", 0x5b:"2", 0x4f:"3", 0x66:"4", 0x6d:"5", 0x7d:"6", 0x07:"7", 0x7f:"8", 0x6f:"9", 0x67:"9", 0x79:"E", 0x58:"c", 0:" "}
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 class BuildDirectory:
@@ -60,15 +59,20 @@ class Simulation:
             for name, text in project["files"].items():
                 (self.cwd / name).write_text(text, encoding="utf-8")
             include = os.path.relpath(ROOT / "sim" / "include", self.cwd)
-            arguments = [compiler, "-std=c99", "-O0", "-g", "-Wall", "-Wextra", "-Wno-unused-variable", "-Wno-unused-function", "-I", include, "-I", "."]
-            result = subprocess.run(arguments + ["-Dmain=arena_user_main", "-c", "main.c", "Scankey.c", "Seven_Segment.c"],
+            c_std = project.get("cStandard", "c90")
+            if c_std == "c99":
+                user_args = [compiler, "-std=c99", "-O0", "-g", "-Wall", "-Wextra", "-Wno-unused-variable", "-Wno-unused-function", "-I", include, "-I", "."]
+            else:
+                user_args = [compiler, "-std=gnu90", "-Werror=declaration-after-statement", "-O0", "-g", "-Wall", "-Wextra", "-Wno-unused-variable", "-Wno-unused-function", "-Wno-long-long", "-I", include, "-I", "."]
+            result = subprocess.run(user_args + ["-Dmain=arena_user_main", "-c", "main.c", "Scankey.c", "Seven_Segment.c"],
                                     cwd=self.cwd, capture_output=True, timeout=25, creationflags=NO_WINDOW)
             diagnostics = result.stderr.decode("utf-8", errors="replace")
             if result.returncode:
                 raise CompileError(diagnostics or "C 程式編譯失敗。")
             self.warnings = diagnostics
             executable = "simulation.exe" if os.name == "nt" else "simulation"
-            result = subprocess.run(arguments + [os.path.relpath(ROOT / "sim" / "runtime.c", self.cwd), "main.o", "Scankey.o", "Seven_Segment.o", "-o", executable, "-lm"] + (["-static"] if os.name == "nt" else []),
+            link_args = [compiler, "-std=c99", "-O0", "-g", "-I", include, "-I", "."]
+            result = subprocess.run(link_args + [os.path.relpath(ROOT / "sim" / "runtime.c", self.cwd), "main.o", "Scankey.o", "Seven_Segment.o", "-o", executable, "-lm"] + (["-static"] if os.name == "nt" else []),
                                     cwd=self.cwd, capture_output=True, timeout=25, creationflags=NO_WINDOW)
             if result.returncode:
                 raise CompileError(result.stderr.decode("utf-8", errors="replace"))
@@ -125,9 +129,18 @@ class Simulation:
                 raise RuntimeError(f"程式異常結束（exit {code}）。\n" + "\n".join(self.logs))
             raise RuntimeError("程式 12 秒內未回應。請檢查無窮迴圈，並使用 GPIO、ScanKey 或 CLK_SysTickDelay 推進模擬。")
 
-    def step(self, keys=(), duration_us=33333):
-        if not isinstance(keys, (list, tuple)) or any(type(key) is not int or key not in range(1,10) for key in keys):
-            raise ValueError("按鍵需為 1～9。")
+    def step(self, keys=(), duration_us=33333, pb15=False):
+        if not isinstance(keys, (list, tuple)):
+            raise ValueError("按鍵需為清單或序組。")
+        valid_keys = []
+        is_pb15 = bool(pb15)
+        for key in keys:
+            if key in (10, "pb15", "PB15"):
+                is_pb15 = True
+            elif type(key) is int and key in range(1, 10):
+                valid_keys.append(key)
+            else:
+                raise ValueError("按鍵需為 1～9 或 PB15。")
         if type(duration_us) is not int or duration_us not in range(1000,100001):
             raise ValueError("模擬步長需為 1000～100000 微秒。")
         with self.lock:
@@ -136,7 +149,9 @@ class Simulation:
                 raise RuntimeError("模擬已停止，請重新執行。")
             if self.frame.get("finished"):
                 return self.frame
-            mask = sum(1 << (key-1) for key in set(keys))
+            mask = sum(1 << (key-1) for key in set(valid_keys))
+            if is_pb15:
+                mask |= (1 << 9)
             try:
                 self.proc.stdin.write(f"{mask} {duration_us}\n".encode("ascii"))
                 self.proc.stdin.flush()

@@ -27,7 +27,10 @@ def normalize_project(data):
         raise ValueError("專案原始碼超過 160KB。")
     files = {name: supplied.get(name, template["files"][name]) for name in EDITABLE}
     files["lab_config.h"] = config_header(config)
-    return dict(labId=lab["id"], sampleId=sample_id, config=config, files=files)
+    c_standard = data.get("cStandard", "c90")
+    if c_standard not in ("c90", "c99"):
+        c_standard = "c90"
+    return dict(labId=lab["id"], sampleId=sample_id, config=config, files=files, cStandard=c_standard)
 
 def export_project(project):
     """Keep the original four-level relative library paths valid in the zip."""
@@ -61,6 +64,8 @@ def export_project(project):
             ET.SubElement(node, "FileName").text = name
             ET.SubElement(node, "FileType").text = "1"
             ET.SubElement(node, "FilePath").text = "..\\..\\..\\..\\Library\\Nu-LB-NUC140\\Source\\" + name
+    for uC99 in tree.iter("uC99"):
+        uC99.text = "1" if project.get("cStandard") == "c99" else "0"
     ET.indent(tree, space="  ")
     entries[project_path] = ET.tostring(tree, encoding="utf-8", xml_declaration=True)
     entries["README.txt"] = (
