@@ -23,6 +23,10 @@ static const unsigned segment_pins[8] = {3,4,0,5,6,2,7,1};
 uint32_t SystemCoreClock = MCU_CLOCK_FREQUENCY;
 uint32_t CyclesPerUs = MCU_CLOCK_FREQUENCY / 1000000u;
 
+void EINT0_IRQHandler(void) __attribute__((weak));
+void EINT1_IRQHandler(void) __attribute__((weak));
+static int pb15_pressed = 0, eint1_enabled = 1, eint1_pending = 0, in_interrupt = 0;
+
 static unsigned mode(unsigned port, unsigned pin) {
     return (ports[port].PMD >> (pin * 2u)) & 3u;
 }
@@ -37,8 +41,24 @@ static uint32_t physical(unsigned port) {
             unsigned column = 2u - ((key-1u) % 3u), row = 3u + ((key-1u) / 3u);
             if ((key_mask & (1u << (key-1u))) && output(0,column)) value &= ~(1u << row);
         }
+    } else if (port == 1) {
+        /* PB15 button */
+        if (pb15_pressed) value |= (1u << 15);
+        else value &= ~(1u << 15);
     }
     return value & 0xffffu;
+}
+static void check_interrupts(void) {
+    if (in_interrupt) return;
+    if (eint1_pending && eint1_enabled) {
+        eint1_pending = 0;
+        ports[1].ISRC |= (1u << 15);
+        if (EINT1_IRQHandler) {
+            in_interrupt = 1;
+            EINT1_IRQHandler();
+            in_interrupt = 0;
+        }
+    }
 }
 static void flush(void) {
     if (pending_port >= 0) {
@@ -93,7 +113,10 @@ static void emit_frame(int finished) {
         printf("]}");
     }
     double hz = (last_falling && now_us-last_falling<100000u) ? frequency : 0.0;
-    printf("],\"buzzer\":{\"active\":%s,\"frequency\":%.2f,\"duty\":%.4f},\"keyMask\":%u,\"events\":[",
+    unsigned r = output(0, 14), g = output(0, 13), b = output(0, 12);
+    unsigned rgb_mask = (r ? 1u : 0u) | (g ? 2u : 0u) | (b ? 4u : 0u);
+    printf("],\"rgb\":{\"r\":%s,\"g\":%s,\"b\":%s,\"mask\":%u},\"buzzer\":{\"active\":%s,\"frequency\":%.2f,\"duty\":%.4f},\"keyMask\":%u,\"events\":[",
+           r ? "true" : "false", g ? "true" : "false", b ? "true" : "false", rgb_mask,
            buzz_time ? "true":"false",hz,(double)buzz_time/duration,key_mask);
     for (unsigned i=0;i<led_count;++i) printf("%s{\"timeUs\":%" PRIu64 ",\"ledMask\":%u}",i?",":"",led_events[i].time,led_events[i].value);
     printf("],\"buzzerEdges\":[");
@@ -108,11 +131,19 @@ static void read_command(void) {
     if (!fgets(line,sizeof(line),stdin)) exit(0);
     if (sscanf(line,"%u %u",&keys,&budget)!=2) exit(2);
     if (budget<1000u || budget>100000u) exit(2);
-    key_mask=keys&511u; goal_us=now_us+budget;
+    key_mask=keys&511u;
+    int new_pb15 = (keys >> 9) & 1u;
+    if (!pb15_pressed && new_pb15) {
+        eint1_pending = 1;
+    }
+    pb15_pressed = new_pb15;
+    goal_us=now_us+budget;
     for(unsigned p=0;p<5;++p) ports[p].PIN=physical(p);
+    check_interrupts();
 }
 static void advance(uint64_t duration) {
     flush();
+    check_interrupts();
     while (duration) {
         uint64_t part=duration;
         if (part>goal_us-now_us) part=goal_us-now_us;
@@ -142,6 +173,22 @@ void GPIO_SetMode(GPIO_T *port,uint32_t mask,uint32_t value) {
 void CLK_SysTickDelay(uint32_t us) { advance(us ? us : 1u); }
 void CLK_SysTickLongDelay(uint32_t us) { advance(us ? us : 1u); }
 void SYS_Init(void) { advance(1); }
+void GPIO_EnableInt(GPIO_T *port, uint32_t pin, uint32_t attribs) {
+    (void)port; (void)pin; (void)attribs;
+    eint1_enabled = 1;
+}
+void GPIO_DisableInt(GPIO_T *port, uint32_t pin) {
+    (void)port; (void)pin;
+    eint1_enabled = 0;
+}
+void NVIC_EnableIRQ(IRQn_Type IRQn) {
+    (void)IRQn;
+    eint1_enabled = 1;
+}
+void NVIC_DisableIRQ(IRQn_Type IRQn) {
+    (void)IRQn;
+    eint1_enabled = 0;
+}
 void SystemCoreClockUpdate(void) { SystemCoreClock=MCU_CLOCK_FREQUENCY;CyclesPerUs=SystemCoreClock/1000000u; }
 extern int arena_user_main(void);
 int main(void) {

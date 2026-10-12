@@ -32,14 +32,14 @@ class Scenario:
         self.progress=progress
         self.deadline=time.monotonic()+75
 
-    def wait(self, milliseconds, keys=()):
+    def wait(self, milliseconds, keys=(), pb15=False):
         frames=[]
         remaining=int(milliseconds*1000)
         while remaining:
             if time.monotonic()>self.deadline:
                 raise RuntimeError("評測超過 75 秒，請縮短不必要的運算。")
             chunk=min(50000,remaining)
-            frame=self.sim.step(list(keys),chunk)
+            frame=self.sim.step(list(keys),chunk,pb15=pb15)
             frames.append(frame)
             self.frames.append(frame)
             remaining-=chunk
@@ -47,6 +47,9 @@ class Scenario:
 
     def tap(self, key):
         return self.wait(100,[key])+self.wait(150)
+
+    def tap_pb15(self):
+        return self.wait(100,pb15=True)+self.wait(150)
 
     def check(self, name, passed, expected, actual):
         self.cases.append(dict(name=name, passed=bool(passed), expected=expected, actual=actual))
@@ -150,6 +153,43 @@ def judge(project, progress=lambda _: None):
             s.display(" 236","刪除後可繼續輸入")
             s.tap(7);s.tap(7);s.tap(7);s.tap(7)
             s.display("    ","清空與空容器刪除")
+        elif lab=="lab4-1":
+            s.check("初始七段顯示全暗",s.frame["display"]=="    ","'    '",repr(s.frame["display"]))
+            s.check("初始 RGB 全滅",s.frame.get("rgb",{}).get("mask",0)==0,"0",str(s.frame.get("rgb",{}).get("mask",0)))
+            s.tap_pb15();s.wait(50)
+            d_masks=[d["mask"]&0x7f for d in s.frame["segments"]]
+            is_iecs=(s.frame["display"] in ("1Ec5","IEcS","1EcS") or d_masks==[0x06,0x79,0x58,0x6d])
+            s.check("顯示 IEcS.",is_iecs,"IEcS. / 1Ec5",repr(s.frame["display"]))
+            sec1=s.wait(900)
+            s.check("第 1 秒紅藍光 (Red+Blue)",any(f.get("rgb",{}).get("mask")==5 for f in sec1),"Red+Blue",str({f.get("rgb",{}).get("mask") for f in sec1}))
+            sec2=s.wait(1000)
+            s.check("第 2 秒藍綠光 (Blue+Green)",any(f.get("rgb",{}).get("mask")==6 for f in sec2),"Blue+Green",str({f.get("rgb",{}).get("mask") for f in sec2}))
+            sec3=s.wait(1000)
+            s.check("第 3 秒綠紅光 (Green+Red)",any(f.get("rgb",{}).get("mask")==3 for f in sec3),"Green+Red",str({f.get("rgb",{}).get("mask") for f in sec3}))
+            s.wait(300)
+            s.check("三秒後七段顯示器關閉",s.frame["display"]=="    ","全暗",repr(s.frame["display"]))
+            s.check("三秒後 RGB 熄滅",s.frame.get("rgb",{}).get("mask",0)==0,"0",str(s.frame.get("rgb",{}).get("mask",0)))
+        elif lab=="lab4-2":
+            s.display("0000","初始碼表顯示 0000")
+            s.tap(1);s.wait(1050)
+            s.check("S 開始計時",s.frame["display"]=="0001","0001",repr(s.frame["display"]))
+            s.tap(2);s.wait(200)
+            paused=s.frame["display"]
+            s.wait(1100)
+            s.check("P 暫停計時",s.frame["display"]==paused,repr(paused),repr(s.frame["display"]))
+            s.tap(4);s.wait(200)
+            s.check("按鍵 4 加時 50 秒",s.frame["display"]=="0051","0051",repr(s.frame["display"]))
+            s.tap(3)
+            s.display("0000","R 重設回到 0000")
+            s.tap_pb15();s.wait(100)
+            marquee=s.wait(1400)
+            masks_seq=[f["segments"][0]["mask"]&0x7f for f in marquee if all(d["mask"]==f["segments"][0]["mask"] for d in f["segments"])]
+            distinct=[]
+            for m in masks_seq:
+                if m in (1,2,4,8,16,32) and (not distinct or distinct[-1]!=m): distinct.append(m)
+            s.check("PB15 中斷四位同步跑馬燈",contains_cycle(distinct,[1,2,4,8,16,32]),"1→2→4→8→16→32 循環",str(distinct))
+            s.tap(1);s.wait(200)
+            s.check("任意鍵結束跑馬燈並恢復碼表",all((d["mask"]&0x7f) not in (1,2,4,8,16,32) for d in s.frame["segments"]),"恢復碼表顯示",repr(s.frame["display"]))
         passed=sum(case["passed"] for case in s.cases)
         return dict(verdict="AC" if passed==len(s.cases) else "WA", passedCases=passed,totalCases=len(s.cases),
                     cases=s.cases, lastFrame=s.frame, trace=[dict(timeUs=f["timeUs"],ledMask=f["ledMask"],display=f["display"],buzzer=f["buzzer"]) for f in s.frames[-100:]],

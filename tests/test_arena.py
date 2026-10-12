@@ -34,7 +34,7 @@ class PeripheralTests(unittest.TestCase):
 
     def test_edited_driver_changes_the_board(self):
         project=normalize_project(get_template('lab3-1'))
-        project['files']['Seven_Segment.c']=project['files']['Seven_Segment.c'].replace('  uint8_t temp,i;','  if (number == 0) return;\n  uint8_t temp,i;')
+        project['files']['Seven_Segment.c']=project['files']['Seven_Segment.c'].replace('  uint8_t temp,i;','  uint8_t temp,i;\n  if (number == 0) return;')
         with Simulation(project) as sim:
             self.assertEqual(sim.step([1],100000)['display'],'   1')
             self.assertEqual(sim.step([],100000)['display'],'    ')
@@ -54,7 +54,7 @@ class PeripheralTests(unittest.TestCase):
             self.assertIsNotNone(sim.proc.poll())
 
 class GradingTests(unittest.TestCase):
-    def test_classroom_programs_pass_all_six_labs(self):
+    def test_classroom_programs_pass_all_labs(self):
         for lab in LABS:
             with self.subTest(lab=lab['id']):
                 result=judge(reference(lab['id']))
@@ -139,7 +139,7 @@ class ServerTests(unittest.TestCase):
         connection=HTTPConnection('127.0.0.1',self.server.server_port)
         connection.request('GET','/api/labs')
         response=connection.getresponse()
-        self.assertEqual(len(json.loads(response.read())),6)
+        self.assertEqual(len(json.loads(response.read())),len(LABS))
         connection.request('GET','/')
         response=connection.getresponse()
         self.assertIn(b'NUC140 Lab Arena',response.read())

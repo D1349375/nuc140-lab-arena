@@ -189,7 +189,7 @@ class Handler(SimpleHTTPRequestHandler):
                 if not simulation:
                     return self.json(404,dict(error="模擬已停止或逾時，請重新執行。"))
                 try:
-                    frame=simulation.step(data.get("keys",[]),data.get("durationUs",33333))
+                    frame=simulation.step(data.get("keys",[]),data.get("durationUs",33333),pb15=bool(data.get("pb15",False)))
                 except Exception:
                     with STATE.lock:
                         STATE.simulations.pop(key,None)

@@ -12,6 +12,40 @@ void GPIO_SetMode(GPIO_T *port, uint32_t mask, uint32_t mode);
 void CLK_SysTickDelay(uint32_t us);
 void CLK_SysTickLongDelay(uint32_t us);
 void SYS_Init(void);
+typedef enum IRQn {
+    EINT0_IRQn = 2,
+    EINT1_IRQn = 3,
+    GPAB_IRQn = 4,
+    GPCDE_IRQn = 5
+} IRQn_Type;
+void NVIC_EnableIRQ(IRQn_Type IRQn);
+void NVIC_DisableIRQ(IRQn_Type IRQn);
+void GPIO_EnableInt(GPIO_T *port, uint32_t u32Pin, uint32_t u32IntAttribs);
+void GPIO_DisableInt(GPIO_T *port, uint32_t u32Pin);
+#define GPIO_INT_RISING         0x00010000UL
+#define GPIO_INT_FALLING        0x00000001UL
+#define GPIO_INT_BOTH_EDGE      0x00010001UL
+#define GPIO_INT_HIGH           0x01010000UL
+#define GPIO_INT_LOW            0x01010001UL
+#define GPIO_EnableEINT0        GPIO_EnableInt
+#define GPIO_EnableEINT1        GPIO_EnableInt
+#define GPIO_DisableEINT0       GPIO_DisableInt
+#define GPIO_DisableEINT1       GPIO_DisableInt
+#define GPIO_CLR_INT_FLAG(port, u32PinMask)         ((port)->ISRC = (u32PinMask))
+#define GPIO_ENABLE_DEBOUNCE(port, u32PinMask)      ((port)->DBEN |= (u32PinMask))
+#define GPIO_DISABLE_DEBOUNCE(port, u32PinMask)     ((port)->DBEN &= ~(u32PinMask))
+#define GPIO_SET_DEBOUNCE_TIME(src, sel)            do {} while(0)
+#define GPIO_DBCLKSRC_HCLK      0UL
+#define GPIO_DBCLKSRC_LIRC      1UL
+#define GPIO_DBCLKSEL_1         0UL
+#define GPIO_DBCLKSEL_2         1UL
+#define GPIO_DBCLKSEL_4         2UL
+#define GPIO_DBCLKSEL_8         3UL
+#define GPIO_DBCLKSEL_16        4UL
+#define GPIO_DBCLKSEL_32        5UL
+#define GPIO_DBCLKSEL_64        6UL
+#define GPIO_DBCLKSEL_128       7UL
+#define GPIO_DBCLKSEL_256       8UL
 #define GPIO_PIN_DATA(port,pin) (*arena_pin((port),(pin)))
 #define GPIO_MODE_INPUT 0u
 #define GPIO_MODE_OUTPUT 1u
